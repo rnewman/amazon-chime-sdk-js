@@ -53,6 +53,14 @@ describe('ConsoleLogger', () => {
       warnSpy = sinon.spy(console, 'warn');
       errorSpy = sinon.spy(console, 'error');
     });
+
+    afterEach(() => {
+      debugSpy.resetHistory();
+      infoSpy.resetHistory();
+      warnSpy.resetHistory();
+      errorSpy.resetHistory();
+    });
+
     after(() => {
       debugSpy.restore();
       infoSpy.restore();
