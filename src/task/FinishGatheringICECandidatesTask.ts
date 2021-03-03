@@ -16,7 +16,7 @@ export default class FinishGatheringICECandidatesTask extends BaseTask {
   private static CHROME_VPN_TIMEOUT_MS = 5000;
 
   private startTimestampMs: number;
-  private cancelPromise: (error: Error) => void;
+  private cancelPromise: undefined | ((error: Error) => void);
 
   constructor(
     private context: AudioVideoControllerState,
@@ -55,7 +55,10 @@ export default class FinishGatheringICECandidatesTask extends BaseTask {
       }
     }
 
-    this.cancelPromise && this.cancelPromise(error);
+    if (this.cancelPromise) {
+      this.cancelPromise(error);
+      delete this.cancelPromise;
+    }
   }
 
   async run(): Promise<void> {
@@ -104,6 +107,7 @@ export default class FinishGatheringICECandidatesTask extends BaseTask {
             if (this.context.peer.iceGatheringState === 'complete') {
               this.removeEventListener();
               resolve();
+              delete this.cancelPromise;
               return;
             }
           };
@@ -131,6 +135,7 @@ export default class FinishGatheringICECandidatesTask extends BaseTask {
               this.context.logger.info('gathered at least one relay candidate');
               this.removeEventListener();
               resolve();
+              delete this.cancelPromise;
               return;
             }
           }
@@ -145,8 +150,10 @@ export default class FinishGatheringICECandidatesTask extends BaseTask {
               this.context.iceCandidates.length === 0
             ) {
               reject(new Error('no ice candidates were gathered'));
+              delete this.cancelPromise;
             } else {
               resolve();
+              delete this.cancelPromise;
             }
           }
         };

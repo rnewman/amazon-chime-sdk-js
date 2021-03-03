@@ -12,7 +12,7 @@ import BaseTask from './BaseTask';
 export default class WaitForAttendeePresenceTask extends BaseTask {
   protected taskName = 'WaitForAttendeePresenceTask';
 
-  private cancelPromise: (error: Error) => void;
+  private cancelPromise: undefined | ((error: Error) => void);
 
   constructor(private context: AudioVideoControllerState) {
     super(context.logger);
@@ -24,7 +24,10 @@ export default class WaitForAttendeePresenceTask extends BaseTask {
         MeetingSessionStatusCode.NoAttendeePresent
       }`
     );
-    this.cancelPromise && this.cancelPromise(error);
+    if (this.cancelPromise) {
+      this.cancelPromise(error);
+      delete this.cancelPromise;
+    }
   }
 
   async run(): Promise<void> {
@@ -40,6 +43,7 @@ export default class WaitForAttendeePresenceTask extends BaseTask {
         if (attendeeId === presentAttendeeId && present) {
           this.context.realtimeController.realtimeUnsubscribeToAttendeeIdPresence(handler);
           resolve();
+          delete this.cancelPromise;
         }
       };
 

@@ -12,7 +12,7 @@ import BaseTask from './BaseTask';
 export default class CreateSDPTask extends BaseTask {
   protected taskName = 'CreateSDPTask';
 
-  private cancelPromise: (error: Error) => void;
+  private cancelPromise: undefined | ((error: Error) => void);
 
   constructor(private context: AudioVideoControllerState) {
     super(context.logger);
@@ -20,7 +20,10 @@ export default class CreateSDPTask extends BaseTask {
 
   cancel(): void {
     const error = new Error(`canceling ${this.name()}`);
-    this.cancelPromise && this.cancelPromise(error);
+    if (this.cancelPromise) {
+      this.cancelPromise(error);
+      delete this.cancelPromise;
+    }
   }
 
   sessionUsesAudio(): boolean {
@@ -71,11 +74,14 @@ export default class CreateSDPTask extends BaseTask {
             );
             this.context.previousSdpOffer = null;
             reject(error);
+            return;
           }
         }
         resolve();
       } catch (error) {
         reject(error);
+      } finally {
+        delete this.cancelPromise;
       }
     });
   }

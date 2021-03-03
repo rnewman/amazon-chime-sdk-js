@@ -10,7 +10,7 @@ import BaseTask from './BaseTask';
 export default class SetLocalDescriptionTask extends BaseTask {
   protected taskName = 'SetLocalDescriptionTask';
 
-  private cancelPromise: (error: Error) => void;
+  private cancelPromise: undefined | ((error: Error) => void);
 
   constructor(private context: AudioVideoControllerState) {
     super(context.logger);
@@ -18,7 +18,10 @@ export default class SetLocalDescriptionTask extends BaseTask {
 
   cancel(): void {
     const error = new Error(`canceling ${this.name()}`);
-    this.cancelPromise && this.cancelPromise(error);
+    if (this.cancelPromise) {
+      this.cancelPromise(error);
+      delete this.cancelPromise;
+    }
   }
 
   async run(): Promise<void> {
@@ -36,8 +39,10 @@ export default class SetLocalDescriptionTask extends BaseTask {
       try {
         await peer.setLocalDescription(sdpOffer);
         resolve();
+        delete this.cancelPromise;
       } catch (error) {
         reject(error);
+        delete this.cancelPromise;
       }
     });
 

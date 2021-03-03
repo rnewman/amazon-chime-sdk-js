@@ -17,7 +17,7 @@ export default class ReceiveTURNCredentialsTask extends BaseTask {
   private url: string;
   private meetingId: string;
   private joinToken: string;
-  private cancelPromise: (error: Error) => void;
+  private cancelPromise: undefined | ((error: Error) => void);
 
   constructor(private context: AudioVideoControllerState) {
     super(context.logger);
@@ -28,7 +28,10 @@ export default class ReceiveTURNCredentialsTask extends BaseTask {
 
   cancel(): void {
     const error = new Error(`canceling ${this.name()}`);
-    this.cancelPromise && this.cancelPromise(error);
+    if (this.cancelPromise) {
+      this.cancelPromise(error);
+      delete this.cancelPromise;
+    }
   }
 
   async run(): Promise<void> {
@@ -80,6 +83,7 @@ export default class ReceiveTURNCredentialsTask extends BaseTask {
               }`
             )
           );
+          return;
         }
         if (responseBody.status && responseBody.status === 404) {
           reject(
@@ -89,10 +93,13 @@ export default class ReceiveTURNCredentialsTask extends BaseTask {
               }`
             )
           );
+          return;
         }
         resolve(await responseBody.json());
       } catch (error) {
         reject(error);
+      } finally {
+        delete this.cancelPromise;
       }
     });
 
